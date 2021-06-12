@@ -1,11 +1,27 @@
-FROM ubuntu:latest
-RUN apt-get -y update && apt-get -y upgrade
-RUN apt-get -y install openjdk-8-jdk wget
+FROM alpine:3.13.5
+
+RUN apk --no-cache add ca-certificates wget
+RUN wget -q -O /etc/apk/keys/sgerrand.rsa.pub https://alpine-pkgs.sgerrand.com/sgerrand.rsa.pub
+RUN wget https://github.com/sgerrand/alpine-pkg-glibc/releases/download/2.28-r0/glibc-2.28-r0.apk
+RUN apk add glibc-2.28-r0.apk
+
+
+RUN mkdir /usr/java
+#RUN mkdir /usr/java/jdk-8u271
+COPY jre-8u291-linux-x64.tar.gz /
+RUN tar -zxvf jre-8u291-linux-x64.tar.gz --strip-components 1 --directory /usr/java
+
 RUN mkdir /usr/local/tomcat
-RUN wget http://www-us.apache.org/dist/tomcat/tomcat-8/v8.5.66/bin/apache-tomcat-8.5.66.tar.gz -O /tmp/tomcat.tar.gz
-RUN cd /tmp && tar xvfz tomcat.tar.gz
-RUN cp -Rv /tmp/apache-tomcat-8.5.66/* /usr/local/tomcat/
-ENV dbDriver=com.mysql.jdbc.Driver dbConnectionUrl=jdbc:mysql://mysql-db/college dbUsername=root dbPassword=akhila8mysql
+COPY apache-tomcat-8.5.66.tar.gz /
+RUN tar xvzf apache-tomcat-8.5.66.tar.gz --strip-components 1 --directory /usr/local/tomcat
+
 COPY WebAPI.war /usr/local/tomcat/webapps/
+ENV dbDriver=com.mysql.jdbc.Driver dbConnectionUrl=jdbc:mysql://sql-database/institution dbUsername=root dbPassword=akhila8mysql
 EXPOSE 8080
-CMD /usr/local/tomcat/bin/catalina.sh run
+
+ENV JAVA_HOME="/usr/java"
+ENV PATH="${JAVA_HOME}/bin:${PATH}"
+ENV PATH="/usr/local/tomcat/bin:${PATH}"
+
+CMD ["catalina.sh", "run"]
+
